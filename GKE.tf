@@ -1,13 +1,12 @@
-resource "google_container_cluster" "my-gke" {
-    name     = "my-gke"
+resource "google_container_cluster" "my-cluster" {
+    name     = "my-gke-cluster"
     location = "${var.region}-a"
-    #the vpc where the cluster will be
     network = google_compute_network.my_vpc.name
     subnetwork = google_compute_subnetwork.restricted_subnet.name
-    #to create my node pool manually
+    networking_mode = "VPC_NATIVE"
     remove_default_node_pool = true
     initial_node_count       = 1 
-    # to allocate the secondry IPs provided by my subnet to the pods and services
+    
     ip_allocation_policy {
         cluster_secondary_range_name = google_compute_subnetwork.restricted_subnet.secondary_ip_range.0.range_name
         services_secondary_range_name = google_compute_subnetwork.restricted_subnet.secondary_ip_range.1.range_name
@@ -16,7 +15,7 @@ resource "google_container_cluster" "my-gke" {
     private_cluster_config {
     enable_private_endpoint = true
     enable_private_nodes = true
-    master_ipv4_cidr_block = "172.16.0.0/28"
+    master_ipv4_cidr_block = "10.1.0.0/28"
     }
 
     master_authorized_networks_config {
@@ -25,21 +24,28 @@ resource "google_container_cluster" "my-gke" {
         display_name = "auth_master"
         }
     }
+    network_policy {
+        enabled = true
+    }
+
+    
 }
 
-resource "google_container_node_pool" "my_node_pool" {
-    name       = "node-pool"
+resource "google_container_node_pool" "worker_nodes" {
+    name       = "workers"
     location = "${var.region}-a"
-    cluster    = google_container_cluster.my-gke.name
-    node_count = 1
+    cluster    = google_container_cluster.my-cluster.name
+    initial_node_count = 1
+
+    max_pods_per_node = 20
 
     node_config {
     preemptible  = true
     machine_type = "g1-small"
-
     service_account = google_service_account.k8s-cluster.email
+    
     oauth_scopes = [
-        "https://www.googleapis.com/auth/cloud-platform"
-    ]
-}
+        "https://www.googleapis.com/auth/cloud-platform"]
+    }
+
 }
