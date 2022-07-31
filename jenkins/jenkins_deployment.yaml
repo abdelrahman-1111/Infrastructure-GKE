@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins
+  namespace: dev
   labels: 
     app: jenkins
 spec:
@@ -16,14 +17,13 @@ spec:
     spec:
       containers:
       - name: jenkins
-        image: jenkins/jenkins:latest
-        ports: 
+        image: abdelrahman1111/docker-jenkins:docker-jenkins-kubectl
+        ports:
         - containerPort: 8080
         volumeMounts:
         - mountPath: /var/jenkins_home
           name: jenkins-volume
-  volumes:
-  - name: jenkins-volume
-    gcePersistentDisk:
-      pdName: jenkins-disk
-      fsType: ext4
+      volumes:
+        - name: jenkins-volume
+          persistentVolumeClaim:
+            claimName:  pvc-jenkins
