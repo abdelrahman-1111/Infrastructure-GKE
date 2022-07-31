@@ -1,11 +1,13 @@
 resource "google_container_cluster" "my-cluster" {
     name     = "my-gke-cluster"
     location = "${var.region}-a"
+    
     network = google_compute_network.my_vpc.name
     subnetwork = google_compute_subnetwork.restricted_subnet.name
     networking_mode = "VPC_NATIVE"
+    
     remove_default_node_pool = true
-    initial_node_count       = 1 
+    initial_node_count   = 1
     
     ip_allocation_policy {
         cluster_secondary_range_name = google_compute_subnetwork.restricted_subnet.secondary_ip_range.0.range_name
@@ -24,28 +26,8 @@ resource "google_container_cluster" "my-cluster" {
         display_name = "auth_master"
         }
     }
+
     network_policy {
         enabled = true
-    }
-
-    
-}
-
-resource "google_container_node_pool" "worker_nodes" {
-    name       = "workers"
-    location = "${var.region}-a"
-    cluster    = google_container_cluster.my-cluster.name
-    initial_node_count = 1
-
-    max_pods_per_node = 20
-
-    node_config {
-    preemptible  = true
-    machine_type = "g1-small"
-    service_account = google_service_account.k8s-cluster.email
-    
-    oauth_scopes = [
-        "https://www.googleapis.com/auth/cloud-platform"]
-    }
-
+        }
 }

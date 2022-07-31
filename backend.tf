@@ -1,5 +1,5 @@
 terraform {
     backend "gcs" {
-    bucket  = "gp_backend_bucket"
+    bucket  = "terraform-tfstate-file-gcp"
     }
 }

@@ -4,6 +4,6 @@ variable "region" {
 }
 variable project {
     type        = string
-    default     = "abdo-project-12345-354211"
+    default     = "hamada-1234"
 
 }
