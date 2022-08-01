@@ -161,23 +161,90 @@ resource "google_compute_instance" "private-vm" {
 }
 ```
 ### GKE 
-- I created the GKE with in same region zone 'a' using variable 'region' in my VPC and defining the default created node pool to false to create my own pool but but the intial node count by 1 to create the master node in it 
-![image](https://user-images.githubusercontent.com/104630009/180889728-1a055340-b996-4aaa-9b19-154dcb9dc134.png)
+- I created the GKE with in same region zone 'a' using variable 'region' in my VPC and defining the default created node pool to false to create my own pool.
+```
+resource "google_container_cluster" "my-cluster" {
+    name     = "my-gke-cluster"
+    location = "${var.region}-a"
+    
+    network = google_compute_network.my_vpc.name
+    subnetwork = google_compute_subnetwork.restricted_subnet.name
+    networking_mode = "VPC_NATIVE"
+    
+    remove_default_node_pool = true
+    initial_node_count   = 1
+    
+```
 - ip allocation policy is where i define my pods and services IPs ranges are and this is what i have defined eariler in my restricted subnet as secondry IPs ranges
-![image](https://user-images.githubusercontent.com/104630009/180890608-f4f817ea-65bb-4d8f-a31a-0649321f077e.png)
+```
+    ip_allocation_policy {
+        cluster_secondary_range_name = google_compute_subnetwork.restricted_subnet.secondary_ip_range.0.range_name
+        services_secondary_range_name = google_compute_subnetwork.restricted_subnet.secondary_ip_range.1.range_name
+    }
+```
 - configuring the private endpoints and nodes as true as make my cluster private and have no access from outside the subnet and assigning the master_ipv4_cidr_block with range of IPs does not overlap any IPs range of the cluster network to assign a private IP to ILB and my master node to be able to communicate with the worker nodes 
-![image](https://user-images.githubusercontent.com/104630009/180891272-9a0916ef-34b1-495b-b9a9-ce85eb94270d.png)
+```
+    #to disable any access to my cluster from outside my vpc 
+    private_cluster_config {
+    enable_private_endpoint = true
+    enable_private_nodes = true
+    master_ipv4_cidr_block = "10.1.0.0/28"
+    }
+```
 - configure a master authorized network which is my managment subnet CIDR range to open the communication between the private VM and the master node to control the cluster from it 
-![image](https://user-images.githubusercontent.com/104630009/180891330-9fb59138-7b88-4544-b430-bab4c6d5bb02.png)
+```
+    master_authorized_networks_config {
+    cidr_blocks {
+        cidr_block = google_compute_subnetwork.management_subnet.ip_cidr_range
+        display_name = "auth_master"
+        }
+     }
+```
+### node pool
 - creating my worker node pool with name node pool in the same zone where is my cluster and assign the service account which allow give permission Role storage.Voewer to allow the nodes to pull images on GCR or Artifact repos and setting the scoop to be on all  platform
-![image](https://user-images.githubusercontent.com/104630009/180891644-114dec81-1af3-4151-9f60-4392233a7ed0.png)
+```
+resource "google_container_node_pool" "worker_nodes" {
+    name       = "workers"
+    location = "${var.region}-a"
+    cluster    = google_container_cluster.my-cluster.name
+    node_count = 1
+
+    max_pods_per_node = 20
+
+    node_config {
+    preemptible  = true
+    machine_type = "n1-standard-1"
+    # service_account = google_service_account.k8s-cluster.email
+    
+    oauth_scopes = [
+        "https://www.googleapis.com/auth/cloud-platform"]
+    }
+}
+```
 ## provision the infrastructure
 - Now i can provision this infrastructure using terraform command `terraform apply`
 ![image](https://user-images.githubusercontent.com/104630009/180893072-e79b58cf-5b5e-415c-8dbe-1a01f7c03d50.png)
 ## setting up the VM 
 ### startup script 
 - I script the following bash script to add gcloud repo then install the gcloud and intiate it and add the kubectl repo and update the packages then install it 
-![image](https://user-images.githubusercontent.com/104630009/180892634-2c54d4ea-6cb1-4729-8021-f636e5bc7423.png)
+```
+#!/bin/bash
+#install gcloud
+sudo apt-get install apt-transport-https ca-certificates gnupg
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+sudo apt-get update && sudo apt-get install google-cloud-cli
+sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
+gcloud init
+
+#Install kubectl
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl
+sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+sudo apt-get install -y kubectl
+```
 ### ssh to the private VM 
 - Now i need to ssh the private VM to setup my configuration to my cluster and copy the jenkins deployment and service yaml files to deploy and expose it
 - So first i made sure that the user i use is authorized to access my project and resources 
@@ -192,6 +259,7 @@ resource "google_compute_instance" "private-vm" {
 - created two name spaces using command 
 ```
 kubectl create ns dev
+kubectl create ns prod
 ```
 ![Screenshot from 2022-07-31 17-00-26](https://user-images.githubusercontent.com/104630009/182129654-b76aca1f-69dc-48e3-8c78-978a4eb39780.png)
 
@@ -247,8 +315,7 @@ spec:
       port: 8080
       targetPort: 8080
 ```
-- To make sure that all my configurations and plugins are not gonna reset each time the pod is destroied i needed to mount a volume on jenkins home directory, ao i created a storage class 
-of type gce/pd to auto create Persistent disks on GCP 
+- To make sure that all my configurations and plugins are not gonna reset each time the pod is destroied i needed to mount a volume on jenkins home directory, so i created a storage class of type gce/pd to auto create Persistent disks on GCP 
 ```
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
