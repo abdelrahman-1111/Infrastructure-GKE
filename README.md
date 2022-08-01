@@ -161,8 +161,7 @@ spec:
             storage: 10Gi
 ```
 - Now i jest need to copy these file to my vm to apply it on my cluster, so i used gcloud secure copy command to copy them 
-```gcloud compute scp --recurse ~/Infrastructure/jenkins  private-vm:~/yamls --project "hamada-1234"
-```
+```gcloud compute scp --recurse ~/Infrastructure/jenkins  private-vm:~/yamls --project "hamada-1234"```
 ![Screenshot from 2022-07-31 19-15-42](https://user-images.githubusercontent.com/104630009/182135525-cbfe8385-4b88-4226-ab84-d08f9177e045.png)
 
 - Now deploy them using 
