@@ -1,6 +1,9 @@
 # ITI graduation project
+
 ## brief about the project 
 My goal was create a CI/CD pipelnie using jenkins to pull a repo and build the code then deploy it on pod, Jenkins runs on GKE provisioned by terraform, Both jenkins and the app are on the same cluster but in 2 diffrenet namespaces.
+## Infrastructure architecture
+![GCP-infrastructure drawio (1)](https://user-images.githubusercontent.com/104630009/182145998-33493605-8a84-4a96-b1a3-a896c3d1ea57.png)
 
 ## provisioning the infrastructue 
 - I started with setting GCP as my provider
