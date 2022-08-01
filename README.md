@@ -3,6 +3,7 @@
 ## Brief about the project 
 My goal was create a CI/CD pipelnie using jenkins to pull a repo and build the code then deploy it on pod, Jenkins runs on GKE provisioned by terraform, Both jenkins and the app are on the same cluster but in 2 diffrenet namespaces.
 ## Infrastructure architecture
+
 ![GCP-infrastructure drawio (1)](https://user-images.githubusercontent.com/104630009/182145998-33493605-8a84-4a96-b1a3-a896c3d1ea57.png)
 
 ## provisioning the infrastructue 
@@ -11,7 +12,14 @@ My goal was create a CI/CD pipelnie using jenkins to pull a repo and build the c
 
 ```gcloud auth login```
 
-![image](https://user-images.githubusercontent.com/104630009/182127940-c20b89b9-82b4-46bb-a8dd-c1fba6046ea5.png)
+```
+provider "google" {
+    project = var.project
+    region = var.region
+    zone = "${var.region}-a"
+}
+```
+
 - And upload my statefile on a bucket to be synchronized with the others 
 ```
 terraform {
