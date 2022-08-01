@@ -366,13 +366,18 @@ spec:
         requests:
             storage: 10Gi
 ```
-- Now i jest need to copy these file to my vm to apply it on my cluster, so i used gcloud secure copy command to copy them 
+- Now i jest need to copy these file to my vm to apply it on my cluster, so i used gcloud secure copy command to copy them
+
 ```gcloud compute scp --recurse ~/Infrastructure/jenkins  private-vm:~/yamls --project "hamada-1234"```
+
 ![Screenshot from 2022-07-31 19-15-42](https://user-images.githubusercontent.com/104630009/182135525-cbfe8385-4b88-4226-ab84-d08f9177e045.png)
 
 - Now deploy them using 
+
 `kubectl apply -Rf yamls`
+
 - And now jenkins is setup and running 
+- 
 ![Screenshot from 2022-08-01 00-58-37](https://user-images.githubusercontent.com/104630009/182136457-cc9098cc-f50a-46f1-b3e7-278e82fab5cf.png)
 ## Create clusterRole for jenkins pod
 - Now my jenkins is set up and able to execute the kubectl commands but it has no permissions on my cluster so, to grant it the needed permissions i created a custerRole to core API group like pods and app API group like deployment 
