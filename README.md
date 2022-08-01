@@ -13,40 +13,153 @@ My goal was create a CI/CD pipelnie using jenkins to pull a repo and build the c
 
 ![image](https://user-images.githubusercontent.com/104630009/182127940-c20b89b9-82b4-46bb-a8dd-c1fba6046ea5.png)
 - And upload my statefile on a bucket to be synchronized with the others 
-
-![image](https://user-images.githubusercontent.com/104630009/180807017-00afc25c-7cf6-43c5-b11b-3ba0c0587783.png)
+```
+terraform {
+    backend "gcs" {
+    bucket  = "terraform-tfstate-file-gcp"
+    }
+}
+```
 ## Network
 - I created a VPC with routing mode ragional as all my infrastructure will impelmented in the same region
-
-![image](https://user-images.githubusercontent.com/104630009/180845657-eb89a9e0-ff54-4591-b254-ddd03fe13874.png)
+```
+resource "google_compute_network" "my_vpc" {
+    name                    = "my-vpc"
+    auto_create_subnetworks = "false"
+    routing_mode = "REGIONAL"
+}
+```
 
 - Subnet with CIDR range [10.0.1.24/24] in my VPC and name it management subnet 
 
-![image](https://user-images.githubusercontent.com/104630009/180845957-9777b197-391a-4a3d-b391-b6feeca8e5d2.png)
+```
+resource "google_compute_subnetwork" "management_subnet" {
+    name          = "management-subnetwork"
+    ip_cidr_range = "10.0.1.0/24"
+    region        = var.region
+    network       = google_compute_network.my_vpc.id
+    private_ip_google_access = true
+}
+````
 
 - Subnet with CIDR range [10.0.2.24/24] in my VPC and name it restricted subnet with two secondry ip ranges for the cluster pods and cluster services 
+```
+resource "google_compute_subnetwork" "restricted_subnet" {
+    name          = "restricted-subnetwork"
+    ip_cidr_range = "10.0.2.0/24"
+    region        = var.region
+    network       = google_compute_network.my_vpc.id
+    private_ip_google_access = true
+    secondary_ip_range {
+    range_name    = "pods"
+    ip_cidr_range = "192.168.1.0/24"
+    }
+    secondary_ip_range {
+    range_name    = "nodes"
+    ip_cidr_range = "192.168.2.0/24"
+    }
+}
+```
 
-![image](https://user-images.githubusercontent.com/104630009/180846280-564d5931-97d3-4078-bd01-897be67d6785.png)
-
-- Then created the firewalll to accept only ssh connection on port 22 with a target to tag to assign it to my private subnet only and not the cluster
-
-![image](https://user-images.githubusercontent.com/104630009/180830714-b23d4918-386e-49a7-a211-a0b8a9d51276.png)
+- Then created the firewalll to accept only ssh connection on port 22 with a target to tag to assign it to my private instance
+```
+resource "google_compute_firewall" "allow-ssh" {
+    name        = "ssh-firewall"
+    network     = google_compute_network.my_vpc.name
+    description = "Creates firewall rule allow to ssh from anywhere"
+    source_ranges = ["0.0.0.0/0"]
+    target_tags = ["ssh"]//adding target tags to specify this firewall to only instances have it
+    allow {
+    protocol  = "tcp"
+    ports     = ["22"]
+    }
+}
+```
 - Then the router to assign it to the Nat gatway for the vpc
-
-![image](https://user-images.githubusercontent.com/104630009/180831091-c9a8f5c0-5bea-4e8e-bf3b-30c84f5b4df6.png)
+```
+resource "google_compute_router" "router" {
+    name    = "my-router"
+    region  = var.region
+    network = google_compute_network.my_vpc.id
+    bgp {
+    asn = 64514
+    }
+}
+```
 - And the Nat gatway to allow both management subnet and restricted subnet to get thier packages and updates 
+```
+resource "google_compute_router_nat" "nat" {
+    name                               = "my-router-nat"
+    router                             = google_compute_router.router.name
+    region                             = var.region
+    nat_ip_allocate_option             = "AUTO_ONLY"
+    source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
+    
+    subnetwork {   
+    name    = google_compute_subnetwork.management_subnet.id
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"] 
+    }
+    subnetwork {   
+    name    = google_compute_subnetwork.restricted_subnet.id
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"] 
+    }
+}
+```
 
-![image](https://user-images.githubusercontent.com/104630009/182137257-eebede3c-cb0d-40e6-886e-a4b61723797f.png)
+
 ## Service accounts
 ### I created a two service account one for my instance and one for the GKE cluster as the following
 - The one attached to my instance have Role of container admin to have permissions to access my cluster 
-![image](https://user-images.githubusercontent.com/104630009/180832720-8ecdd7b6-5c5f-4f8a-9245-19d44504be80.png)
+```
+resource "google_service_account" "k8s-service-account" {
+    account_id   = "k8s-service-account"
+}
+
+resource "google_project_iam_member" "k8s-iam-member" {
+    project = var.project
+    role    = "roles/container.admin"
+    member  = "serviceAccount:${google_service_account.k8s-service-account.email}"
+}
+
+```
 - The one for my cluster have the Role of storage viwer to have permission to pull the images from my GCR repo
-![image](https://user-images.githubusercontent.com/104630009/180833016-c90b6847-b723-4767-ada3-bc0d38650d27.png)
+```
+resource "google_service_account" "k8s-cluster" {
+    account_id   = "k8s-cluster"
+}
+
+resource "google_project_iam_member" "cluster-iam-member" {
+    project = var.project
+    role    = "roles/storage.objectViewer"
+    member  = "serviceAccount:${google_service_account.k8s-cluster.email}"
+}
+
+```
 ## Computing instance and GKE
 ### private VM
-- Creating an instance in my managment subnet having tag [ssh] to allow the traffic on port 22 using my firewall and assign the service account to access the GKE and assign a strtup script to install gcloud and kubectl whicl i will discuss below 
-![image](https://user-images.githubusercontent.com/104630009/180833348-48cce134-38c4-46c5-ad1d-29cb11657215.png)
+- Creating an instance in my managment subnet having tag [ssh] to allow the traffic on port 22 using my firewall and assign the service account to access the GKE and assign a strtup script to install gcloud and kubectl to control my GKE cluster  
+```
+resource "google_compute_instance" "private-vm" {
+    name = "private-vm"
+    machine_type = "f1-micro"
+    zone = "${var.region}-a"
+    tags = ["ssh"]//adding this tag to assign the ssh firewall to this instances only 
+    boot_disk {
+        initialize_params {
+            image = "debian-cloud/debian-9"
+        }
+    }
+    network_interface {
+        subnetwork  = google_compute_subnetwork.management_subnet.self_link
+        network_ip = "10.0.1.2"
+    }
+    service_account {
+    email  = google_service_account.k8s-service-account.email
+    scopes = ["cloud-platform"]
+    }
+    metadata_startup_script = file("./install_kubectl.sh")
+}
+```
 ### GKE 
 - I created the GKE with in same region zone 'a' using variable 'region' in my VPC and defining the default created node pool to false to create my own pool but but the intial node count by 1 to create the master node in it 
 ![image](https://user-images.githubusercontent.com/104630009/180889728-1a055340-b996-4aaa-9b19-154dcb9dc134.png)
