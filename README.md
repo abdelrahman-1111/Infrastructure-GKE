@@ -168,3 +168,44 @@ spec:
 `kubectl apply -Rf yamls`
 - And now jenkins is setup and running 
 ![Screenshot from 2022-08-01 00-58-37](https://user-images.githubusercontent.com/104630009/182136457-cc9098cc-f50a-46f1-b3e7-278e82fab5cf.png)
+## Create clusterRole for jenkins pod
+- Now my jenkins is set up and able to execute the kubectl commands but it has no permissions on my cluster so, to grant it the needed permissions i created a custerRole to core API group like pods and app API group like deployment 
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["*"]
+  verbs: ["*"]
+  ```
+  - i need to create a service account to be able to attach these permissions to my jenkins deployment(pods) 
+``` 
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cluster-admin
+  namespace: dev
+```
+- and to link the clusterRole with this service account i must create clusterRleBinding
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-onwer
+subjects:
+- kind: ServiceAccount
+  name: cluster-admin 
+  namespace: dev 
+roleRef:
+  kind: ClusterRole
+  name: cluster-role
+  apiGroup: rbac.authorization.k8s.io
+```
+> Now my jenkins is ready and have the write permissions to create a deployment and a service account for my app, so lets move to the another part 
+
+[The deplyment repo](https://github.com/abdelrahman-1111/deploy-app-GKE.git)
