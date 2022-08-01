@@ -12,7 +12,7 @@ My goal was create a CI/CD pipelnie using jenkins to pull a repo and build the c
 - And upload my statefile on a bucket to be synchronized with the others 
 
 ![image](https://user-images.githubusercontent.com/104630009/180807017-00afc25c-7cf6-43c5-b11b-3ba0c0587783.png)
-### Network
+## Network
 - I created a VPC with routing mode ragional as all my infrastructure will impelmented in the same region
 
 ![image](https://user-images.githubusercontent.com/104630009/180845657-eb89a9e0-ff54-4591-b254-ddd03fe13874.png)
@@ -31,10 +31,10 @@ My goal was create a CI/CD pipelnie using jenkins to pull a repo and build the c
 - Then the router to assign it to the Nat gatway for the vpc
 
 ![image](https://user-images.githubusercontent.com/104630009/180831091-c9a8f5c0-5bea-4e8e-bf3b-30c84f5b4df6.png)
-- And the Nat gatway to allow only managment subnet including my private instance to get its packages and updates 
+- And the Nat gatway to allow both management subnet and restricted subnet to get thier packages and updates 
 
-![image](https://user-images.githubusercontent.com/104630009/180831599-2ae8749b-6e34-4263-af88-f1b90aa882b6.png)
-### Service accounts
+![image](https://user-images.githubusercontent.com/104630009/182137257-eebede3c-cb0d-40e6-886e-a4b61723797f.png)
+## Service accounts
 ### I created a two service account one for my instance and one for the GKE cluster as the following
 - The one attached to my instance have Role of container admin to have permissions to access my cluster 
 ![image](https://user-images.githubusercontent.com/104630009/180832720-8ecdd7b6-5c5f-4f8a-9245-19d44504be80.png)
