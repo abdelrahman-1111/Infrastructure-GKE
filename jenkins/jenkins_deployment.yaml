@@ -15,6 +15,7 @@ spec:
       labels:
         app: jenkins
     spec:
+      serviceAccountName: cluster-admin
       containers:
       - name: jenkins
         image: abdelrahman1111/docker-jenkins:docker-jenkins-kubectl
@@ -23,7 +24,12 @@ spec:
         volumeMounts:
         - mountPath: /var/jenkins_home
           name: jenkins-volume
+        - mountPath: /var/run/docker.sock
+          name: docker-daemon-volume
       volumes:
         - name: jenkins-volume
           persistentVolumeClaim:
-            claimName:  pvc-jenkins
+          claimName:  pvc-jenkins
+        - name: docker-daemon-volume
+          hostPath: 
+            path: /var/run/docker.sock 
