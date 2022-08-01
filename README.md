@@ -109,9 +109,13 @@ spec:
       volumes:
         - name: jenkins-volume
           persistentVolumeClaim:
-            claimName:  pvc-jenkins```
+            claimName:  pvc-jenkins 
+```
+            
 - then the service yaml to expose it 
-```apiVersion: v1
+
+```
+apiVersion: v1
 kind: Service
 metadata:
   name: jenkins-service
@@ -125,10 +129,12 @@ spec:
   ports:
     - protocol: TCP
       port: 8080
-      targetPort: 8080```
+      targetPort: 8080
+```
 - To make sure that all my configurations and plugins are not gonna reset each time the pod is destroied i needed to mount a volume on jenkins home directory, ao i created a storage class 
 of type gce/pd to auto create Persistent disks on GCP 
-```apiVersion: storage.k8s.io/v1
+```
+apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: jenins-disk
@@ -149,7 +155,8 @@ spec:
         - ReadWriteOnce
     resources:
         requests:
-            storage: 10Gi```
+            storage: 10Gi
+```
 - Now i jest need to copy these file to my vm to apply it on my cluster, so i used gcloud secure copy command to copy them 
 ```gcloud compute scp --recurse ~/Infrastructure/jenkins  private-vm:~/yamls --project "hamada-1234"
 ```
