@@ -263,6 +263,32 @@ kubectl create ns prod
 ```
 ![Screenshot from 2022-07-31 17-00-26](https://user-images.githubusercontent.com/104630009/182129654-b76aca1f-69dc-48e3-8c78-978a4eb39780.png)
 
+# Jenkins image
+- As i gonna run a pipeline builds images and deploy on a cluster i needed a unique jenkins image so i built my own using docker build command
+``` docker built -t docker-jenkins-kubectl:latest -f Dockerfile . ```
+```
+FROM jenkins/jenkins:latest
+USER root
+ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
+RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt
+RUN apt-get -y update
+RUN apt-get -y install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+RUN mkdir -p /etc/apt/keyrings
+RUN  curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+RUN apt-get -y update
+RUN apt-get -y install docker-ce docker-ce-cli 
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN mv ./kubectl /usr/local/bin
+```
+## jenkins deploy
+
 - Now i can write my deployment yaml file to deploy jenkins
 ```
 apiVersion: apps/v1
@@ -315,7 +341,7 @@ spec:
       port: 8080
       targetPort: 8080
 ```
-- To make sure that all my configurations and plugins are not gonna reset each time the pod is destroied i needed to mount a volume on jenkins home directory, so i created a storage class of type gce/pd to auto create Persistent disks on GCP 
+- To make sure that all my configurations and plugins are not gonna reset each time the pod is restart i needed to mount a volume on jenkins home directory, so i created a storage class of type gce/pd to auto create Persistent disks on GCP 
 ```
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
