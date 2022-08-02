@@ -154,7 +154,7 @@ resource "google_compute_instance" "private-vm" {
     tags = ["ssh"]//adding this tag to assign the ssh firewall to this instances only 
     boot_disk {
         initialize_params {
-            image = "debian-cloud/debian-9"
+            image = "debian-cloud/debian-11"
         }
     }
     network_interface {
@@ -262,7 +262,8 @@ sudo apt-get install -y kubectl
 - after ensure that kubectl and gcloud is installed
 ![image](https://user-images.githubusercontent.com/104630009/180894344-71084e61-a0a4-41dd-a813-0d59a442bc1f.png)
 ![image](https://user-images.githubusercontent.com/104630009/180894409-20ff8256-dd4a-4573-b5fa-615a1f3f24c2.png)
-- i configured my cluster using `gcloud container cluster get-credetintials` 
+- i configured my cluster using
+`gcloud container clusters get-credentials my-gke-cluster --zone us-central1-a --project hamada-1234` 
 ![image](https://user-images.githubusercontent.com/104630009/180894809-189a0a3c-742d-4221-a4ae-675c3bafc262.png)
 - created two name spaces using command 
 ```
@@ -403,7 +404,7 @@ rules:
   resources: ["*"]
   verbs: ["*"]
   ```
-  - i need to create a service account to be able to attach these permissions to my jenkins deployment(pods) 
+- i need to create a service account to be able to attach these permissions to my jenkins deployment(pods) 
 ``` 
 apiVersion: v1
 kind: ServiceAccount
@@ -426,6 +427,10 @@ roleRef:
   name: cluster-role
   apiGroup: rbac.authorization.k8s.io
 ```
+- i just need to copy them to my vm to apply then on my jenkins pod, so i used gcloud secure copy command to do that 
+```gcloud compute scp --recurse ~/Infrastructure/clusterPermissions/*  private-vm:~/serviceaccounts --project "hamada-1234"
+```
+
 > Now my jenkins is ready and have the write permissions to create a deployment and a service account for my app, so lets move to the another part 
 
 [The deplyment repo](https://github.com/abdelrahman-1111/deploy-app-GKE.git)

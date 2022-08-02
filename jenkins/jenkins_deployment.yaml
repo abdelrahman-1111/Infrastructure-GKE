@@ -29,7 +29,7 @@ spec:
       volumes:
         - name: jenkins-volume
           persistentVolumeClaim:
-          claimName:  pvc-jenkins
+            claimName:  pvc-jenkins
         - name: docker-daemon-volume
           hostPath: 
             path: /var/run/docker.sock 
