@@ -1,7 +1,6 @@
 FROM jenkins/jenkins:latest
 USER root
-ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
-RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt
+#install docker cli
 RUN apt-get -y update
 RUN apt-get -y install \
     ca-certificates \
@@ -14,6 +13,7 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/doc
     $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 RUN apt-get -y update
 RUN apt-get -y install docker-ce docker-ce-cli 
+#instal kubectl 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl
 RUN mv ./kubectl /usr/local/bin
