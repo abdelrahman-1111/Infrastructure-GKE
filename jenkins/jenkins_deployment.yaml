@@ -18,7 +18,7 @@ spec:
       serviceAccountName: cluster-admin
       containers:
       - name: jenkins
-        image: abdelrahman1111/docker-jenkins:docker-jenkins-kubectl
+        image: abdelrahman1111/grad-proj:djk
         ports:
         - containerPort: 8080
         volumeMounts:
