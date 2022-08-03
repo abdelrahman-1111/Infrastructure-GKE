@@ -331,7 +331,7 @@ spec:
           persistentVolumeClaim:
             claimName:  pvc-jenkins 
 ```
-            
+- And as you can see, I mounted the the docker daemon path to be mounted to the path om my node container engine runtime which is docker as my pods will work as **DOOD** wich means that i run docker inside a pod running on docker runtimme            
 - then the service yaml to expose it 
 
 ```
@@ -351,6 +351,7 @@ spec:
       port: 8080
       targetPort: 8080
 ```
+
 - To make sure that all my configurations and plugins are not gonna reset each time the pod is restart i needed to mount a volume on jenkins home directory, so i created a storage class of type gce/pd to auto create Persistent disks on GCP 
 ```
 apiVersion: storage.k8s.io/v1
