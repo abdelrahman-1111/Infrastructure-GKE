@@ -331,7 +331,7 @@ spec:
           persistentVolumeClaim:
             claimName:  pvc-jenkins 
 ```
-- And as you can see, I mounted the the docker daemon path to be mounted to the path om my node container engine runtime which is docker as my pods will work as **DOOD** wich means that i run docker inside a pod running on docker runtimme            
+- And as you can see, I mounted the the docker daemon path to be mounted to the path om my node container engine runtime which is docker as my pods will work as **DOOD** wich means that i run docker inside a pod running on docker runtimme where my pod will use my node docker daemon to create the required resources.        
 - then the service yaml to expose it 
 
 ```
