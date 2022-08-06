@@ -318,18 +318,24 @@ spec:
       labels:
         app: jenkins
     spec:
+      serviceAccountName: cluster-admin
       containers:
       - name: jenkins
-        image: abdelrahman1111/docker-jenkins:docker-jenkins-kubectl
+        image: abdelrahman1111/grad-proj:djk
         ports:
         - containerPort: 8080
         volumeMounts:
         - mountPath: /var/jenkins_home
           name: jenkins-volume
+        - mountPath: /var/run/docker.sock
+          name: docker-daemon-volume
       volumes:
         - name: jenkins-volume
           persistentVolumeClaim:
-            claimName:  pvc-jenkins 
+            claimName:  pvc-jenkins
+        - name: docker-daemon-volume
+          hostPath: 
+            path: /var/run/docker.sock 
 ```
 - And as you can see, I mounted the the docker daemon path to be mounted to the path om my node container engine runtime which is docker as my pods will work as **DOOD** wich means that i run docker inside a pod running on docker runtimme where my pod will use my node docker daemon to create the required resources.        
 - then the service yaml to expose it 
@@ -362,9 +368,11 @@ provisioner: kubernetes.io/gce-pd
 parameters:
   type: pd-standard
   fstype: ext4
-  replication-type: none```
+  replication-type: none
+  ```
 - but to link this volume to my jenkins deployment i needed to create PVC [Persistent Volume Claim] to attach the volume 
-```apiVersion: v1
+```
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
     name: pvc-jenkins
