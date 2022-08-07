@@ -274,7 +274,7 @@ kubectl create ns prod
 
 # Jenkins image
 - As i gonna run a pipeline builds images and deploy on a cluster i needed a unique jenkins image so i built my own using docker build command
-``` docker built -t docker-jenkins-kubectl:latest -f Dockerfile . ```
+``` docker build -t docker-jenkins-kubectl:latest -f Dockerfile . ```
 ```
 FROM jenkins/jenkins:latest
 USER root
