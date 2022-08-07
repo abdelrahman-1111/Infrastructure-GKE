@@ -145,7 +145,7 @@ resource "google_project_iam_member" "cluster-iam-member" {
 ```
 ## Computing instance and GKE
 ### private VM
-- Creating an instance in my managment subnet having tag [ssh] to allow the traffic on port 22 using my firewall and assign the service account to access the GKE and assign a strtup script to install gcloud and kubectl to control my GKE cluster  
+- Creating an instance in my management subnet having tag [ssh] to allow the traffic on port 22 using my firewall and assign the service account to access the GKE and assign a startup script to install gcloud and kubectl to control my GKE cluster  
 ```
 resource "google_compute_instance" "private-vm" {
     name = "private-vm"
